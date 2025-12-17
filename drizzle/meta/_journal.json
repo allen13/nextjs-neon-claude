@@ -8,6 +8,13 @@
       "when": 1765924292099,
       "tag": "0000_lethal_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765927471543,
+      "tag": "0001_regular_lady_vermin",
+      "breakpoints": true
     }
   ]
 }

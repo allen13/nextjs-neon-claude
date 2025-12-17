@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Hexagon, Github } from "lucide-react"
+import Link from "next/link";
+import { Hexagon, Github } from "lucide-react";
 
 import {
   NavigationMenu,
@@ -9,9 +9,10 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
+} from "@/components/ui/navigation-menu";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { UserButton } from "@/components/auth/user-button";
 
 const navItems = [
   { title: "Home", href: "/" },
@@ -54,6 +55,7 @@ export function Navbar() {
             </a>
           </Button>
           <ThemeToggle />
+          <UserButton />
         </div>
       </div>
     </header>
