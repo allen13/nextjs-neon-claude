@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth/client";
 
 export interface OrganizationMember {
@@ -27,48 +27,37 @@ export interface OrganizationWithMembers {
 }
 
 export function useOrganization(orgId: string) {
-  const [organization, setOrganization] =
-    useState<OrganizationWithMembers | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    async function fetchOrganization() {
-      try {
-        setLoading(true);
-        // Set the active organization first
-        await authClient.organization.setActive({ organizationId: orgId });
+  const {
+    data: organization,
+    isPending: loading,
+    error,
+  } = useQuery({
+    queryKey: ["organization", orgId],
+    queryFn: async () => {
+      // Set the active organization first
+      await authClient.organization.setActive({ organizationId: orgId });
 
-        // Get full organization data including members
-        const { data, error } =
-          await authClient.organization.getFullOrganization();
+      // Get full organization data including members
+      const { data, error } =
+        await authClient.organization.getFullOrganization();
 
-        if (error) {
-          throw new Error(error.message || "Failed to fetch organization");
-        }
-
-        setOrganization(data as OrganizationWithMembers);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch organization",
-        );
-      } finally {
-        setLoading(false);
+      if (error) {
+        throw new Error(error.message || "Failed to fetch organization");
       }
-    }
 
-    if (orgId) {
-      fetchOrganization();
-    }
-  }, [orgId]);
+      return data as OrganizationWithMembers;
+    },
+    enabled: !!orgId,
+  });
 
   return {
-    organization,
+    organization: organization ?? null,
     loading,
-    error,
+    error: error instanceof Error ? error.message : null,
     refetch: () => {
-      setLoading(true);
-      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId] });
     },
   };
 }

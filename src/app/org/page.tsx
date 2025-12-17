@@ -1,6 +1,10 @@
 "use client";
 
-import { CreateOrganizationDialog } from "@neondatabase/neon-js/auth/react/ui";
+import {
+  CreateOrganizationDialog,
+  OrganizationSwitcher,
+} from "@neondatabase/neon-js/auth/react/ui";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -15,42 +19,33 @@ import { authClient } from "@/lib/auth/client";
 
 export default function OrganizationsPage() {
   const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!sessionPending && !session) {
       router.push("/auth/sign-in");
     }
-  }, [session, isPending, router]);
+  }, [session, sessionPending, router]);
 
-  useEffect(() => {
-    async function fetchOrganizations() {
-      try {
-        const { data, error } = await authClient.organization.list();
-        if (error)
-          throw new Error(error.message || "Failed to fetch organizations");
-        setOrganizations(data || []);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch organizations",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (session) {
-      fetchOrganizations();
-    }
-  }, [session]);
+  const {
+    data: organizations = [],
+    isPending: orgsPending,
+    error,
+  } = useQuery({
+    queryKey: ["organizations"],
+    queryFn: async () => {
+      const { data, error } = await authClient.organization.list();
+      if (error)
+        throw new Error(error.message || "Failed to fetch organizations");
+      return (data || []) as Organization[];
+    },
+    enabled: !!session,
+  });
 
   const columns = useMemo(() => getOrganizationColumns(), []);
 
-  if (isPending || loading) {
+  if (sessionPending || !session || orgsPending) {
     return (
       <div className="container mx-auto py-8">
         <div className="mb-8 flex items-center gap-2">
@@ -77,10 +72,6 @@ export default function OrganizationsPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
-
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -93,7 +84,9 @@ export default function OrganizationsPage() {
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
+          <OrganizationSwitcher size="icon" />
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Create Organization
@@ -103,15 +96,7 @@ export default function OrganizationsPage() {
 
       {error && (
         <div className="mb-4 rounded-md bg-destructive/15 p-4 text-destructive">
-          {error}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-2"
-            onClick={() => setError(null)}
-          >
-            Dismiss
-          </Button>
+          {error instanceof Error ? error.message : "An error occurred"}
         </div>
       )}
 

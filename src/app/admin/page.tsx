@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Search, Shield, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,105 +32,84 @@ interface User {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { isAdmin, isPending } = useAdmin();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { isAdmin, isPending: adminPending } = useAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isPending && !isAdmin) {
+    if (!adminPending && !isAdmin) {
       router.push("/");
     }
-  }, [isAdmin, isPending, router]);
+  }, [isAdmin, adminPending, router]);
 
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const { data, error } = await authClient.admin.listUsers({
-          query: {
-            limit: 50,
-            offset: 0,
-            ...(searchQuery && {
-              searchValue: searchQuery,
-              searchField: "email" as const,
-              searchOperator: "contains" as const,
-            }),
-          },
-        });
-        if (error) throw new Error(error.message || "Failed to fetch users");
-        setUsers(data?.users || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch users");
-      } finally {
-        setLoading(false);
-      }
-    }
+  const {
+    data: users = [],
+    isPending: usersPending,
+    error,
+  } = useQuery({
+    queryKey: ["admin-users", searchQuery],
+    queryFn: async () => {
+      const { data, error } = await authClient.admin.listUsers({
+        query: {
+          limit: 50,
+          offset: 0,
+          ...(searchQuery && {
+            searchValue: searchQuery,
+            searchField: "email" as const,
+            searchOperator: "contains" as const,
+          }),
+        },
+      });
+      if (error) throw new Error(error.message || "Failed to fetch users");
+      return (data?.users || []) as User[];
+    },
+    enabled: isAdmin,
+  });
 
-    if (isAdmin) {
-      fetchUsers();
-    }
-  }, [isAdmin, searchQuery]);
-
-  async function handleRoleChange(userId: string, newRole: string) {
-    try {
-      // Note: Better Auth admin plugin supports custom roles via server config
-      // Cast to expected type - server will validate
-      const { error } = await authClient.admin.setRole({
+  const roleChangeMutation = useMutation({
+    mutationFn: ({ userId, newRole }: { userId: string; newRole: string }) =>
+      authClient.admin.setRole({
         userId,
         role: newRole as "user" | "admin",
-      });
-      if (error) throw new Error(error.message || "Failed to update role");
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role");
-    }
-  }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
 
-  async function handleBanUser(userId: string) {
-    try {
-      const { error } = await authClient.admin.banUser({ userId });
-      if (error) throw new Error(error.message || "Failed to ban user");
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, banned: true } : u)),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to ban user");
-    }
-  }
+  const banMutation = useMutation({
+    mutationFn: (userId: string) => authClient.admin.banUser({ userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
 
-  async function handleUnbanUser(userId: string) {
-    try {
-      const { error } = await authClient.admin.unbanUser({ userId });
-      if (error) throw new Error(error.message || "Failed to unban user");
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, banned: false } : u)),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to unban user");
-    }
-  }
+  const unbanMutation = useMutation({
+    mutationFn: (userId: string) => authClient.admin.unbanUser({ userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
 
-  async function handleDeleteUser(userId: string) {
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) => authClient.admin.removeUser({ userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+
+  function handleDeleteUser(userId: string) {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    try {
-      const { error } = await authClient.admin.removeUser({ userId });
-      if (error) throw new Error(error.message || "Failed to delete user");
-      setUsers(users.filter((u) => u.id !== userId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete user");
-    }
+    deleteMutation.mutate(userId);
   }
 
-  function handleUserCreated(user: User) {
-    setUsers([user, ...users]);
+  function handleUserCreated() {
+    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     setCreateDialogOpen(false);
   }
 
-  if (isPending || loading) {
+  if (adminPending || !isAdmin || usersPending) {
     return (
       <div className="container mx-auto py-8">
         <div className="mb-8 flex items-center gap-2">
@@ -155,9 +135,18 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  const queryError = error instanceof Error ? error.message : null;
+  const mutationError =
+    roleChangeMutation.error instanceof Error
+      ? roleChangeMutation.error.message
+      : banMutation.error instanceof Error
+        ? banMutation.error.message
+        : unbanMutation.error instanceof Error
+          ? unbanMutation.error.message
+          : deleteMutation.error instanceof Error
+            ? deleteMutation.error.message
+            : null;
+  const displayError = queryError || mutationError;
 
   return (
     <div className="container mx-auto py-8">
@@ -177,17 +166,9 @@ export default function AdminPage() {
         </Button>
       </div>
 
-      {error && (
+      {displayError && (
         <div className="mb-4 rounded-md bg-destructive/15 p-4 text-destructive">
-          {error}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-2"
-            onClick={() => setError(null)}
-          >
-            Dismiss
-          </Button>
+          {displayError}
         </div>
       )}
 
@@ -238,7 +219,10 @@ export default function AdminPage() {
                         <RoleSelect
                           value={user.role || "user"}
                           onValueChange={(role) =>
-                            handleRoleChange(user.id, role)
+                            roleChangeMutation.mutate({
+                              userId: user.id,
+                              newRole: role,
+                            })
                           }
                         />
                       </td>
@@ -264,13 +248,13 @@ export default function AdminPage() {
                             <DropdownMenuSeparator />
                             {user.banned ? (
                               <DropdownMenuItem
-                                onClick={() => handleUnbanUser(user.id)}
+                                onClick={() => unbanMutation.mutate(user.id)}
                               >
                                 Unban User
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
-                                onClick={() => handleBanUser(user.id)}
+                                onClick={() => banMutation.mutate(user.id)}
                               >
                                 Ban User
                               </DropdownMenuItem>

@@ -17,7 +17,7 @@ export default function OrgDetailLayout({
   const params = useParams<{ orgId: string }>();
   const orgId = params.orgId;
   const { data: session, isPending: sessionPending } = authClient.useSession();
-  const { organization, loading, error } = useOrganization(orgId);
+  const { organization, loading: orgLoading, error } = useOrganization(orgId);
 
   useEffect(() => {
     if (!sessionPending && !session) {
@@ -25,7 +25,7 @@ export default function OrgDetailLayout({
     }
   }, [session, sessionPending, router]);
 
-  if (sessionPending || loading) {
+  if (sessionPending || !session || orgLoading) {
     return (
       <div className="container mx-auto py-8">
         <div className="animate-pulse">
@@ -50,10 +50,6 @@ export default function OrgDetailLayout({
         </div>
       </div>
     );
-  }
-
-  if (!session) {
-    return null;
   }
 
   if (error) {

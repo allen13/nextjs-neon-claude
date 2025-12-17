@@ -1,7 +1,9 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MDEditor from "@uiw/react-md-editor";
 import { Plus, Save, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,58 +27,71 @@ interface Note {
 }
 
 export default function NotesPage() {
-  const { data: session } = authClient.useSession();
-  const { resolvedTheme } = useTheme();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [newNoteTitle, setNewNoteTitle] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
-  const [editingContent, setEditingContent] = useState<string>("");
-  const [saving, setSaving] = useState(false);
-  const colorMode = resolvedTheme === "dark" ? "dark" : "light";
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
   useEffect(() => {
-    async function fetchNotes() {
-      try {
-        const data = await getUserNotes();
-        setNotes(data as Note[]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch notes");
-      } finally {
-        setLoading(false);
-      }
+    if (!sessionPending && !session) {
+      router.push("/auth/sign-in");
     }
+  }, [session, sessionPending, router]);
 
-    if (session) {
-      fetchNotes();
-    }
-  }, [session]);
+  const { resolvedTheme } = useTheme();
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
+  const colorMode = resolvedTheme === "dark" ? "dark" : "light";
 
-  async function handleCreateNote(e: React.FormEvent) {
+  const {
+    data: notes = [],
+    isPending: notesPending,
+    error,
+  } = useQuery({
+    queryKey: ["notes"],
+    queryFn: async () => {
+      const data = await getUserNotes();
+      return data as Note[];
+    },
+    enabled: !!session,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (title: string) => createNote(title, null),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setNewNoteTitle("");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      title,
+      content,
+    }: {
+      id: number;
+      title: string;
+      content: string;
+    }) => updateNote(id, title, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setEditingNoteId(null);
+      setEditingContent("");
+    },
+  });
+
+  function handleCreateNote(e: React.FormEvent) {
     e.preventDefault();
     if (!newNoteTitle.trim()) return;
-
-    setCreating(true);
-    try {
-      const note = await createNote(newNoteTitle.trim(), null);
-      setNotes([note as Note, ...notes]);
-      setNewNoteTitle("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create note");
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  async function handleDeleteNote(id: number) {
-    try {
-      await deleteNote(id);
-      setNotes(notes.filter((note) => note.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete note");
-    }
+    createMutation.mutate(newNoteTitle.trim());
   }
 
   function handleStartEdit(note: Note) {
@@ -89,25 +104,15 @@ export default function NotesPage() {
     setEditingContent("");
   }
 
-  async function handleSaveEdit(note: Note) {
-    setSaving(true);
-    try {
-      await updateNote(note.id, note.title, editingContent);
-      setNotes(
-        notes.map((n) =>
-          n.id === note.id ? { ...n, content: editingContent } : n,
-        ),
-      );
-      setEditingNoteId(null);
-      setEditingContent("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save note");
-    } finally {
-      setSaving(false);
-    }
+  function handleSaveEdit(note: Note) {
+    updateMutation.mutate({
+      id: note.id,
+      title: note.title,
+      content: editingContent,
+    });
   }
 
-  if (loading) {
+  if (sessionPending || !session || notesPending) {
     return (
       <div className="container mx-auto py-8">
         <h1 className="mb-8 text-3xl font-bold">Your Notes</h1>
@@ -127,13 +132,24 @@ export default function NotesPage() {
     );
   }
 
+  const queryError = error instanceof Error ? error.message : null;
+  const mutationError =
+    createMutation.error instanceof Error
+      ? createMutation.error.message
+      : deleteMutation.error instanceof Error
+        ? deleteMutation.error.message
+        : updateMutation.error instanceof Error
+          ? updateMutation.error.message
+          : null;
+  const displayError = queryError || mutationError;
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="mb-8 text-3xl font-bold">Your Notes</h1>
 
-      {error && (
+      {displayError && (
         <div className="mb-4 rounded-md bg-destructive/15 p-4 text-destructive">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -145,9 +161,12 @@ export default function NotesPage() {
           onChange={(e) => setNewNoteTitle(e.target.value)}
           className="flex-1"
         />
-        <Button type="submit" disabled={creating || !newNoteTitle.trim()}>
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || !newNoteTitle.trim()}
+        >
           <Plus className="mr-2 h-4 w-4" />
-          {creating ? "Creating..." : "Add Note"}
+          {createMutation.isPending ? "Creating..." : "Add Note"}
         </Button>
       </form>
 
@@ -183,7 +202,7 @@ export default function NotesPage() {
                           e.stopPropagation();
                           handleSaveEdit(note);
                         }}
-                        disabled={saving}
+                        disabled={updateMutation.isPending}
                         className="h-8 w-8 text-muted-foreground hover:text-primary"
                       >
                         <Save className="h-4 w-4" />
@@ -206,7 +225,7 @@ export default function NotesPage() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteNote(note.id);
+                        deleteMutation.mutate(note.id);
                       }}
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     >

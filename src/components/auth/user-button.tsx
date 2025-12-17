@@ -20,5 +20,5 @@ export function UserButton() {
     );
   }
 
-  return <NeonUserButton />;
+  return <NeonUserButton size="icon" />;
 }

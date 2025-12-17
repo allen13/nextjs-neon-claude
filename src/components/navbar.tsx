@@ -1,8 +1,8 @@
 "use client";
 
-import { OrganizationSwitcher } from "@neondatabase/neon-js/auth/react/ui";
 import { Github, Hexagon } from "lucide-react";
 import Link from "next/link";
+import { UserButton } from "@/components/auth/user-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +66,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild>
             <a
-              href="https://github.com"
+              href="https://github.com/allen13/nextjs-neon-claude"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -75,7 +75,7 @@ export function Navbar() {
             </a>
           </Button>
           <ThemeToggle />
-          <OrganizationSwitcher size="icon" />
+          <UserButton />
         </div>
       </div>
     </header>
