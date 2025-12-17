@@ -1,22 +1,17 @@
 "use client";
 
 import { CreateOrganizationDialog } from "@neondatabase/neon-js/auth/react/ui";
-import { Building2, Plus, Settings, Users } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { Building2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getOrganizationColumns,
+  type Organization,
+} from "@/components/organizations/organizations-columns";
+import { OrganizationsTable } from "@/components/organizations/organizations-table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { authClient } from "@/lib/auth/client";
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  logo?: string | null;
-  createdAt: Date;
-}
 
 export default function OrganizationsPage() {
   const router = useRouter();
@@ -53,6 +48,8 @@ export default function OrganizationsPage() {
     }
   }, [session]);
 
+  const columns = useMemo(() => getOrganizationColumns(), []);
+
   if (isPending || loading) {
     return (
       <div className="container mx-auto py-8">
@@ -60,18 +57,22 @@ export default function OrganizationsPage() {
           <Building2 className="h-8 w-8" />
           <h1 className="text-3xl font-bold">Organizations</h1>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 w-3/4 rounded bg-muted" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 w-full rounded bg-muted" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="py-8">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 animate-pulse">
+                  <div className="h-10 w-10 rounded-lg bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/4 rounded bg-muted" />
+                    <div className="h-3 w-1/6 rounded bg-muted" />
+                  </div>
+                  <div className="h-4 w-20 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -129,54 +130,7 @@ export default function OrganizationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {organizations.map((org) => (
-            <Card key={org.id} className="hover:bg-muted/50 transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    {org.logo ? (
-                      <Image
-                        src={org.logo}
-                        alt={org.name}
-                        width={32}
-                        height={32}
-                        className="rounded"
-                      />
-                    ) : (
-                      <Building2 className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-medium">{org.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      @{org.slug}
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Link href={`/org/members?orgId=${org.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Users className="mr-2 h-4 w-4" />
-                      Members
-                    </Button>
-                  </Link>
-                  <Link href={`/org/settings?orgId=${org.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Button>
-                  </Link>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Created {new Date(org.createdAt).toLocaleDateString()}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <OrganizationsTable columns={columns} data={organizations} />
       )}
 
       <CreateOrganizationDialog
