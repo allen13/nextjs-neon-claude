@@ -1,8 +1,8 @@
 "use client";
 
-import { ThemeProvider } from "next-themes";
-import { useRouter } from "next/navigation";
 import { NeonAuthUIProvider } from "@neondatabase/neon-js/auth/react/ui";
+import { useRouter } from "next/navigation";
+import { ThemeProvider } from "next-themes";
 import { authClient } from "@/lib/auth/client";
 
 export function Providers({ children }: { children: React.ReactNode }) {

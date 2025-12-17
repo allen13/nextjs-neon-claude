@@ -1,7 +1,7 @@
-import Link from "next/link"
-import { FileQuestion } from "lucide-react"
+import { FileQuestion } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -14,13 +14,11 @@ export default function NotFound() {
         404
       </h1>
 
-      <p className="mt-2 text-xl text-muted-foreground">
-        Page not found
-      </p>
+      <p className="mt-2 text-xl text-muted-foreground">Page not found</p>
 
       <p className="mt-4 max-w-md text-muted-foreground">
-        Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been
-        moved or doesn&apos;t exist.
+        Sorry, we couldn&apos;t find the page you&apos;re looking for. It might
+        have been moved or doesn&apos;t exist.
       </p>
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -32,5 +30,5 @@ export default function NotFound() {
         </Button>
       </div>
     </div>
-  )
+  );
 }

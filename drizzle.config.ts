@@ -1,8 +1,9 @@
 import "dotenv/config";
-import { defineConfig } from "drizzle-kit";
 
 // Load from .env.local for Next.js projects
 import { config } from "dotenv";
+import { defineConfig } from "drizzle-kit";
+
 config({ path: ".env.local" });
 
 if (!process.env.DATABASE_URL) {

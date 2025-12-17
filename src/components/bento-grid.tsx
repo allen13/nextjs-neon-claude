@@ -1,18 +1,17 @@
 import {
-  Zap,
-  Palette,
-  Moon,
   Blocks,
   Code2,
+  Database,
+  Moon,
+  Palette,
+  Rabbit,
   Sparkles,
   Terminal,
-  Database,
-  Rabbit,
-} from "lucide-react"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+  Zap,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const features = [
   {
@@ -78,11 +77,14 @@ const features = [
     icon: Sparkles,
     className: "md:col-span-3",
   },
-]
+];
 
 export function BentoGrid() {
   return (
-    <section id="features" className="mx-auto max-w-screen-xl px-4 py-24 sm:px-6 lg:px-8">
+    <section
+      id="features"
+      className="mx-auto max-w-screen-xl px-4 py-24 sm:px-6 lg:px-8"
+    >
       <div className="mb-12 text-center">
         <Badge variant="outline" className="mb-4">
           Features
@@ -91,7 +93,8 @@ export function BentoGrid() {
           Everything you need to get started
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
-          A carefully curated set of tools and patterns for modern web development.
+          A carefully curated set of tools and patterns for modern web
+          development.
         </p>
       </div>
 
@@ -101,7 +104,7 @@ export function BentoGrid() {
             key={feature.title}
             className={cn(
               "group relative overflow-hidden transition-all hover:shadow-lg",
-              feature.className
+              feature.className,
             )}
           >
             <CardHeader>
@@ -117,5 +120,5 @@ export function BentoGrid() {
         ))}
       </div>
     </section>
-  )
+  );
 }

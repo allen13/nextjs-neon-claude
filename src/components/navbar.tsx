@@ -1,8 +1,10 @@
 "use client";
 
+import { Github, Hexagon } from "lucide-react";
 import Link from "next/link";
-import { Hexagon, Github } from "lucide-react";
-
+import { UserButton } from "@/components/auth/user-button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -10,14 +12,11 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { UserButton } from "@/components/auth/user-button";
 
 const navItems = [
   { title: "Home", href: "/" },
   { title: "Notes", href: "/notes" },
-]
+];
 
 export function Navbar() {
   return (
@@ -32,10 +31,11 @@ export function Navbar() {
           <NavigationMenuList>
             {navItems.map((item) => (
               <NavigationMenuItem key={item.title}>
-                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                  <Link href={item.href}>
-                    {item.title}
-                  </Link>
+                <NavigationMenuLink
+                  asChild
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href={item.href}>{item.title}</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
@@ -58,5 +58,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }

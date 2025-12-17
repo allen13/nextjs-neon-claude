@@ -36,7 +36,7 @@ export async function createNote(title: string, content: string | null) {
 export async function updateNote(
   id: number,
   title: string,
-  content: string | null
+  content: string | null,
 ) {
   const { data, error } = await neonClient
     .from("notes")

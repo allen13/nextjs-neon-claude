@@ -1,8 +1,8 @@
 "use client";
 
 import { UserButton as NeonUserButton } from "@neondatabase/neon-js/auth/react/ui";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
 
 export function UserButton() {

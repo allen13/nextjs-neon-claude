@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import MDEditor from "@uiw/react-md-editor";
+import { Plus, Save, Trash2, X } from "lucide-react";
 import { useTheme } from "next-themes";
-import { getUserNotes, createNote, deleteNote, updateNote } from "@/lib/neon/queries";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
-import { Plus, Trash2, Save, X } from "lucide-react";
-import MDEditor from "@uiw/react-md-editor";
+import {
+  createNote,
+  deleteNote,
+  getUserNotes,
+  updateNote,
+} from "@/lib/neon/queries";
 
 interface Note {
   id: number;
@@ -88,9 +93,11 @@ export default function NotesPage() {
     setSaving(true);
     try {
       await updateNote(note.id, note.title, editingContent);
-      setNotes(notes.map((n) =>
-        n.id === note.id ? { ...n, content: editingContent } : n
-      ));
+      setNotes(
+        notes.map((n) =>
+          n.id === note.id ? { ...n, content: editingContent } : n,
+        ),
+      );
       setEditingNoteId(null);
       setEditingContent("");
     } catch (err) {
@@ -155,7 +162,11 @@ export default function NotesPage() {
           {notes.map((note) => (
             <Card
               key={note.id}
-              className={editingNoteId === note.id ? "col-span-full" : "cursor-pointer hover:bg-muted/50 transition-colors"}
+              className={
+                editingNoteId === note.id
+                  ? "col-span-full"
+                  : "cursor-pointer hover:bg-muted/50 transition-colors"
+              }
               onClick={() => editingNoteId !== note.id && handleStartEdit(note)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -204,7 +215,11 @@ export default function NotesPage() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent onClick={(e) => editingNoteId === note.id && e.stopPropagation()}>
+              <CardContent
+                onClick={(e) =>
+                  editingNoteId === note.id && e.stopPropagation()
+                }
+              >
                 {editingNoteId === note.id ? (
                   <div data-color-mode={colorMode}>
                     <MDEditor
@@ -216,11 +231,16 @@ export default function NotesPage() {
                   </div>
                 ) : (
                   <>
-                    <div data-color-mode={colorMode} className="prose prose-sm dark:prose-invert max-w-none">
+                    <div
+                      data-color-mode={colorMode}
+                      className="prose prose-sm dark:prose-invert max-w-none"
+                    >
                       {note.content ? (
                         <MDEditor.Markdown source={note.content} />
                       ) : (
-                        <p className="text-muted-foreground italic">Click to add content...</p>
+                        <p className="text-muted-foreground italic">
+                          Click to add content...
+                        </p>
                       )}
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
