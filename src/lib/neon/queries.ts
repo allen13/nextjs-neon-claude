@@ -3,7 +3,7 @@
 import { neonClient } from "./client";
 
 // Query notes - JWT token is automatically injected for authenticated users
-// RLS policies ensure users can only access their own notes
+// RLS policy returns: own notes for regular users, all notes for admin/moderator
 export async function getUserNotes() {
   const { data, error } = await neonClient
     .from("notes")

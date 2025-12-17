@@ -8,6 +8,7 @@ if (!process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL) {
 }
 
 // Create the auth client with React adapter for hooks support
+// Neon Auth includes admin, organization, jwt, and emailOTP plugins by default
 export const authClient = createAuthClient(
   process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL,
   {

@@ -12,10 +12,11 @@ export const notes = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
+  // read: owner OR admin/moderator | modify: owner only
   (table) => [
     crudPolicy({
       role: authenticatedRole,
-      read: authUid(table.userId),
+      read: sql`auth.user_id() = ${table.userId} OR auth.user_role() IN ('admin', 'moderator')`,
       modify: authUid(table.userId),
     }),
   ],
