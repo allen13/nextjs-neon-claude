@@ -16,8 +16,7 @@ import { UserButton } from "@/components/auth/user-button";
 
 const navItems = [
   { title: "Home", href: "/" },
-  { title: "Features", href: "#features" },
-  { title: "Docs", href: "/docs" },
+  { title: "Notes", href: "/notes" },
 ]
 
 export function Navbar() {
