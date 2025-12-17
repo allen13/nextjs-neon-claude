@@ -18,7 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         authClient={authClient}
         navigate={router.push}
         replace={router.replace}
-        redirectTo="/dashboard"
+        redirectTo="/notes"
         onSessionChange={() => {
           // Clear router cache (protected routes)
           router.refresh();
